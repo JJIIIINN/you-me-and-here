@@ -11,30 +11,51 @@ export default function MainPage({ setMap, map, contents, coordArray }) {
     const [viewMarker, setViewMarker] = useState(false);
     const [markers, setMarkers] = useState([]);
     const [location, setLoacation] = useState({
-        lat: 0,
-        lng: 0,
+        name: "",
+        coord: {
+            lat: 0,
+            lng: 0,
+        },
     }); // 현재 위치를 저장할 상태
 
     useEffect(() => {
-        successHandler(location); // 성공시 successHandler, 실패시 errorHandler 함수가 실행된다.
+        successHandler(location.coord); // 성공시 successHandler, 실패시 errorHandler 함수가 실행된다.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map, contents]);
 
     useEffect(() => {
         if (!!coordArray.length) {
             setLoacation({
-                lat:
-                    coordArray
-                        .map((item) => Number(item.y))
-                        .reduce((yCoord1, yCoord2) => yCoord1 + yCoord2) /
-                    coordArray.length,
-                lng:
-                    coordArray
-                        .map((item) => Number(item.x))
-                        .reduce((xCoord1, xCoord2) => xCoord1 + xCoord2) /
-                    coordArray.length,
+                name: coordArray[0].address.address_name,
+                coord: {
+                    lat:
+                        coordArray
+                            .map((item) => Number(item.y))
+                            .reduce((yCoord1, yCoord2) => yCoord1 + yCoord2) /
+                        coordArray.length,
+                    lng:
+                        coordArray
+                            .map((item) => Number(item.x))
+                            .reduce((xCoord1, xCoord2) => xCoord1 + xCoord2) /
+                        coordArray.length,
+                },
             });
             setViewMarker(true);
+            setTimeout(() => {
+                let geocoder = new kakao.maps.services.Geocoder();
+
+                let coord = new kakao.maps.LatLng(location.lat, location.lng);
+                let callback = function (result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        console.log(result);
+                    }
+                };
+                geocoder.coord2Address(
+                    coord.getLng(),
+                    coord.getLat(),
+                    callback
+                );
+            });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [coordArray]);
@@ -42,7 +63,10 @@ export default function MainPage({ setMap, map, contents, coordArray }) {
     useEffect(() => {
         navigator.geolocation.getCurrentPosition((response) => {
             const { latitude, longitude } = response.coords;
-            setLoacation({ lat: latitude, lng: longitude });
+            setLoacation({
+                name: "",
+                coord: { lat: latitude, lng: longitude },
+            });
         }); // 성공시 successHandler, 실패시 errorHandler 함수가 실행된다.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -69,7 +93,7 @@ export default function MainPage({ setMap, map, contents, coordArray }) {
 
     return (
         <Map
-            center={location} // 지도의 중심 좌표
+            center={location.coord} // 지도의 중심 좌표
             style={{ width: "100vw", height: "100vh" }} // 지도 크기
             level={5} // 지도 확대 레벨
             onCreate={setMap}
@@ -93,7 +117,17 @@ export default function MainPage({ setMap, map, contents, coordArray }) {
                         >
                             {openInfo === marker.id && (
                                 <TextBox>
-                                    {marker.place_name}
+                                    <div
+                                        style={{
+                                            width: "100%",
+                                            overflow: "hidden",
+                                            whiteSpace: "nowrap",
+                                            textOverflow: "ellipsis",
+                                            wordBreak: "break-all",
+                                        }}
+                                    >
+                                        {marker.place_name}
+                                    </div>
                                     <LinkBox>
                                         <div
                                             style={{ cursor: "pointer" }}
@@ -158,17 +192,52 @@ export default function MainPage({ setMap, map, contents, coordArray }) {
                         src: Here,
                         size: { width: 60, height: 60 },
                     }}
-                    position={location}
-                    onMouseOver={
-                        // 마커에 마우스오버 이벤트가 발생하면 인포윈도우를 마커위에 표시합니다
-                        () => setOpenInfo("Here")
+                    position={location.coord}
+                    onClick={() =>
+                        openInfo === "Here"
+                            ? setOpenInfo(0)
+                            : setOpenInfo("Here")
                     }
-                    // 마커에 마우스아웃 이벤트를 등록합니다
-                    onMouseOut={
-                        // 마커에 마우스아웃 이벤트가 발생하면 인포윈도우를 제거합니다
-                        () => setOpenInfo(0)
-                    }
-                />
+                >
+                    {openInfo === "Here" && (
+                        <TextBox>
+                            <div
+                                style={{
+                                    width: "100%",
+                                    overflow: "hidden",
+                                    whiteSpace: "nowrap",
+                                    textOverflow: "ellipsis",
+                                    wordBreak: "break-all",
+                                }}
+                            >
+                                {location.name}
+                            </div>
+                            <LinkBox>
+                                <div
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() =>
+                                        shareKakao(
+                                            `https://map.kakao.com/link/to/현재위치,${location.coord.lat},${location.coord.lng}`,
+                                            location.name,
+                                            "중앙위치"
+                                        )
+                                    }
+                                >
+                                    공유하기
+                                </div>
+                                •
+                                <a
+                                    style={{ cursor: "pointer" }}
+                                    href={`https://map.kakao.com/link/to/중앙위치,${location.coord.lat},${location.coord.lng}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    길찾기
+                                </a>
+                            </LinkBox>
+                        </TextBox>
+                    )}
+                </MapMarker>
             )}
         </Map>
     );

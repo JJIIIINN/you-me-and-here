@@ -17,6 +17,7 @@ export default function Finder({
     var geocoder = new kakao.maps.services.Geocoder();
 
     const [title, setTitle] = useState("Spoon");
+    const [search, setSearch] = useState();
     const [juso, setJuso] = useState();
 
     // 음식점 - 한식 / 중식 / 양식 / 일식
@@ -73,6 +74,26 @@ export default function Finder({
         <Container>
             {!!coordArray.length && (
                 <>
+                    <SearchWrapper>
+                        <SearchInput
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    setContents(search);
+                                }
+                            }}
+                            placeholder="찾고 싶은 곳을 검색해주세요."
+                            style={{ width: "85%" }}
+                        />
+                        <Btn
+                            style={{ width: "13.5%" }}
+                            onClick={() => setContents(search)}
+                            disabled={!search}
+                        >
+                            검색
+                        </Btn>
+                    </SearchWrapper>
                     <HeaderImgWrapper>
                         <HeaderImg
                             src={Spoon}
@@ -151,6 +172,7 @@ export default function Finder({
                         }
                         disabled={true}
                         placeholder="주소 찾기를 눌러 주소를 입력해주세요."
+                        style={{ width: "75%" }}
                     />
                     <Btn style={{ width: "23.5%" }} onClick={handleOpenPopup}>
                         주소 찾기
@@ -287,13 +309,13 @@ const InputWrapper = styled.div`
 `;
 
 const AddressInput = styled.input`
-    width: 75%;
     height: 40px;
     background-color: #f0e4d7;
     border: 2px solid #ff7171;
     border-radius: 10px;
     padding: 0 10px;
     font-size: 16px;
+    outline: none;
     cursor: not-allowed;
 `;
 
@@ -339,4 +361,21 @@ const XBtn = styled.button`
     border: none;
     font-size: 20px;
     cursor: pointer;
+`;
+
+const SearchWrapper = styled.div`
+    width: 100%;
+    display: flex;
+    padding: 20px;
+    justify-content: space-between;
+`;
+
+const SearchInput = styled.input`
+    height: 40px;
+    background-color: #f0e4d7;
+    border: 2px solid #ff7171;
+    border-radius: 10px;
+    padding: 0 10px;
+    font-size: 16px;
+    outline: none;
 `;
